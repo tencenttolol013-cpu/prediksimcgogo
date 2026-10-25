@@ -261,7 +261,7 @@ public class OverlayService extends Service {
         Toast.makeText(this, "Data disimpan", Toast.LENGTH_SHORT).show();
     }
 
-    private void runPrediction() {
+private void runPrediction() {
         String[] parts = savedHistory.split("[,;\\n]");
         List<String> ordered = new ArrayList<>();
         Map<String, Double> score = new LinkedHashMap<>();
