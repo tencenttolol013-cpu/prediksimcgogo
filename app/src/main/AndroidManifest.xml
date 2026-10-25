@@ -1,14 +1,10 @@
-
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-
     <application
         android:allowBackup="false"
         android:label="Raja Gokgok"
         android:theme="@android:style/Theme.Material.NoActionBar">
-
         <activity
             android:name="com.krizz.mcgg.MainActivity"
             android:exported="true">
@@ -17,10 +13,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <service
             android:name="com.krizz.mcgg.OverlayService"
             android:exported="false" />
-
     </application>
 </manifest>
