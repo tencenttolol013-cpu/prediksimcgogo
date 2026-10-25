@@ -29,15 +29,26 @@ jobs:
 
       - name: Build Debug APK
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          gradle assembleDebug --stacktrace
-        env:
-          ANDROID_HOME: /usr/local/lib/android/sdk
-          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          # Otomatis deteksi jika file berada di dalam subfolder MCGG_Predictor_Android
+          if [ -d "MCGG_Predictor_Android" ] && [ -f "MCGG_Predictor_Android/settings.gradle.kts" ]; then
+            echo "Project ditemukan di subfolder MCGG_Predictor_Android"
+            cd MCGG_Predictor_Android
+          fi
+
+          echo "Direktori saat ini: $(pwd)"
+          ls -la
+
+          # Jalankan build dengan gradlew atau gradle
+          if [ -f "./gradlew" ]; then
+            chmod +x ./gradlew
+            ./gradlew assembleDebug --no-daemon --stacktrace
+          else
+            gradle assembleDebug --no-daemon --stacktrace
+          fi
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MCGG-Predictor-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: '**/build/outputs/apk/debug/*.apk'
           if-no-files-found: error
