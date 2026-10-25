@@ -22,45 +22,33 @@ jobs:
         shell: bash
         run: |
           ZIP_FILE=$(find . -maxdepth 3 -type f -iname '*MCGG*Android*Source*.zip' | head -n 1)
-
           if [ -z "$ZIP_FILE" ]; then
-            echo "ZIP project Android tidak ditemukan."
-            echo "Daftar file repository:"
+            echo "ZIP tidak ditemukan"
             find . -maxdepth 4 -type f
             exit 1
           fi
-
           echo "ZIP ditemukan: $ZIP_FILE"
           echo "zip_file=$ZIP_FILE" >> "$GITHUB_OUTPUT"
 
       - name: Extract Android project
+        shell: bash
         run: |
           mkdir -p android-project
           unzip -o "${{ steps.source.outputs.zip_file }}" -d android-project
-          echo "Daftar file project:"
-          find android-project -maxdepth 4 -type f | head -200
 
       - name: Locate Gradle project
         id: project
         shell: bash
         run: |
-          ROOT="android-project"
-
-          while [ ! -f "$ROOT/gradlew" ] && [ ! -f "$ROOT/build.gradle" ] && [ ! -f "$ROOT/build.gradle.kts" ]; do
-            NEXT=$(find "$ROOT" -mindepth 2 -maxdepth 4 -type f \( -name gradlew -o -name build.gradle -o -name build.gradle.kts \) | head -n 1)
-
-            if [ -z "$NEXT" ]; then
-              echo "File build.gradle, build.gradle.kts, atau gradlew tidak ditemukan."
-              echo "ZIP mungkin bukan project Android lengkap."
-              exit 1
-            fi
-
-            ROOT=$(dirname "$NEXT")
-            break
-          done
-
-          echo "Project directory: $ROOT"
-          echo "dir=$ROOT" >> "$GITHUB_OUTPUT"
+          BUILD_FILE=$(find android-project -maxdepth 5 -type f \( -name gradlew -o -name build.gradle -o -name build.gradle.kts \) | head -n 1)
+          if [ -z "$BUILD_FILE" ]; then
+            echo "Konfigurasi Gradle tidak ditemukan dalam ZIP"
+            find android-project -maxdepth 5 -type f
+            exit 1
+          fi
+          PROJECT_DIR=$(dirname "$BUILD_FILE")
+          echo "dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+          echo "Project: $PROJECT_DIR"
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -68,16 +56,14 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-            - name: Setup Android SDK
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Build Debug APK
         working-directory: ${{ steps.project.outputs.dir }}
@@ -95,7 +81,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MCGG-Predictor-APK
-          path: |
-            android-project/**/build/outputs/apk/debug/*.apk
+          path: android-project/**/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 7
