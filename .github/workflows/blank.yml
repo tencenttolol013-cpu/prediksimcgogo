@@ -27,18 +27,27 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Build Debug APK
+      - name: Extract Project Files & Build APK
         run: |
-          # Otomatis deteksi jika file berada di dalam subfolder MCGG_Predictor_Android
-          if [ -d "MCGG_Predictor_Android" ] && [ -f "MCGG_Predictor_Android/settings.gradle.kts" ]; then
-            echo "Project ditemukan di subfolder MCGG_Predictor_Android"
-            cd MCGG_Predictor_Android
+          # 1. Ekstrak otomatis file .zip atau .zip.html yang ada di repo kamu
+          shopt -s nullglob
+          for f in *.zip *.zip.html *.zip.*; do
+            if [ -f "$f" ]; then
+              echo "Mengekstrak file arsip: $f"
+              unzip -o "$f" || true
+            fi
+          done
+
+          # 2. Masuk ke folder proyek
+          PROJECT_DIR=$(find . -maxdepth 3 -name "settings.gradle.kts" -exec dirname {} \; | head -n 1)
+          if [ -n "$PROJECT_DIR" ]; then
+            cd "$PROJECT_DIR"
           fi
 
-          echo "Direktori saat ini: $(pwd)"
+          echo "Daftar file yang siap dirakit:"
           ls -la
 
-          # Jalankan build dengan gradlew atau gradle
+          # 3. Jalankan kompilasi APK
           if [ -f "./gradlew" ]; then
             chmod +x ./gradlew
             ./gradlew assembleDebug --no-daemon --stacktrace
