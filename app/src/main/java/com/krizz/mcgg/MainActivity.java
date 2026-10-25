@@ -3,63 +3,148 @@ package com.krizz.mcgg;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.graphics.Color;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.widget.*;
+
+import java.util.*;
 
 public class MainActivity extends Activity {
     EditText history;
     TextView result;
 
+    int dp(float n) {
+        return (int)(n * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    GradientDrawable bg(int color, int stroke) {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(color);
+        d.setCornerRadius(dp(22));
+        d.setStroke(dp(1), stroke);
+        return d;
+    }
+
+    LinearLayout.LayoutParams lp() {
+        return new LinearLayout.LayoutParams(-1, -2);
+    }
+
+    TextView text(String value, int size, int color, boolean bold) {
+        TextView t = new TextView(this);
+        t.setText(value);
+        t.setTextSize(size);
+        t.setTextColor(color);
+        if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        return t;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        getWindow().setStatusBarColor(Color.rgb(10, 14, 30));
+        getWindow().setNavigationBarColor(Color.rgb(10, 14, 30));
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setBackgroundColor(Color.rgb(10, 14, 30));
+
         LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(24, 32, 24, 24);
-        root.setBackgroundColor(Color.rgb(12, 17, 38));
+        root.setOrientation(1);
+        root.setPadding(dp(20), dp(28), dp(20), dp(28));
+        scroll.addView(root);
 
-        TextView title = new TextView(this);
-        title.setText("RAJA GOKGOK");
-        title.setTextSize(28);
-        title.setTextColor(Color.WHITE);
+        TextView brand = text("MCGG  /  SMART PREDICTOR", 11,
+                Color.rgb(145, 168, 255), true);
+        brand.setGravity(Gravity.CENTER);
+        root.addView(brand, lp());
+
+        TextView title = text("RAJA GOKGOK", 29, Color.WHITE, true);
         title.setGravity(Gravity.CENTER);
-        root.addView(title, new LinearLayout.LayoutParams(
-                -1, 80));
+        title.setPadding(0, dp(8), 0, dp(3));
+        root.addView(title, lp());
 
-        TextView subtitle = new TextView(this);
-        subtitle.setText("PREDIKSI LAWAN MCGG");
-        subtitle.setTextColor(Color.rgb(135, 160, 255));
-        subtitle.setGravity(Gravity.CENTER);
-        root.addView(subtitle);
+        TextView sub = text("Prediksi lawan berikutnya", 14,
+                Color.rgb(180, 191, 220), false);
+        sub.setGravity(Gravity.CENTER);
+        sub.setPadding(0, 0, 0, dp(22));
+        root.addView(sub, lp());
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(1);
+        card.setPadding(dp(17), dp(17), dp(17), dp(17));
+        card.setBackground(bg(Color.rgb(22, 30, 57),
+                Color.rgb(65, 82, 137)));
+        root.addView(card, lp());
+
+        card.addView(text("RIWAYAT PERTANDINGAN", 11,
+                Color.rgb(153, 174, 255), true), lp());
+
+        TextView hint = text(
+                "Masukkan riwayat lawan, pisahkan dengan koma atau baris baru.",
+                12, Color.rgb(170, 182, 211), false);
+        hint.setPadding(0, dp(8), 0, dp(12));
+        card.addView(hint, lp());
 
         history = new EditText(this);
-        history.setHint("Riwayat lawan, pisahkan dengan koma\nContoh: Alpha, Beta, Alpha");
-        history.setTextColor(Color.WHITE);
+        history.setHint("Contoh: Alpha, Beta, Alpha");
         history.setHintTextColor(Color.GRAY);
-        history.setGravity(Gravity.TOP);
+        history.setTextColor(Color.WHITE);
+        history.setTextSize(14);
+        history.setGravity(Gravity.TOP | Gravity.START);
         history.setMinLines(4);
-        root.addView(history, new LinearLayout.LayoutParams(
-                -1, 180));
+        history.setPadding(dp(14), dp(12), dp(14), dp(12));
+        history.setBackground(bg(Color.rgb(17, 24, 46),
+                Color.rgb(62, 78, 123)));
+        card.addView(history, new LinearLayout.LayoutParams(-1, dp(130)));
 
         Button predict = new Button(this);
         predict.setText("ANALISIS RIWAYAT");
-        root.addView(predict);
+        predict.setTextColor(Color.WHITE);
+        predict.setBackground(bg(Color.rgb(78, 101, 232),
+                Color.rgb(123, 144, 255)));
+        LinearLayout.LayoutParams bp = lp();
+        bp.topMargin = dp(14);
+        card.addView(predict, bp);
 
-        result = new TextView(this);
-        result.setTextColor(Color.WHITE);
-        result.setTextSize(17);
-        result.setPadding(8, 20, 8, 20);
-        root.addView(result);
+        LinearLayout resultCard = new LinearLayout(this);
+        resultCard.setOrientation(1);
+        resultCard.setPadding(dp(17), dp(17), dp(17), dp(17));
+        resultCard.setBackground(bg(Color.rgb(22, 30, 57),
+                Color.rgb(65, 82, 137)));
+        LinearLayout.LayoutParams rp = lp();
+        rp.topMargin = dp(16);
+        root.addView(resultCard, rp);
+
+        resultCard.addView(text("HASIL PREDIKSI", 11,
+                Color.rgb(153, 174, 255), true), lp());
+
+        result = text("Prediksi akan muncul di sini setelah riwayat dianalisis.",
+                14, Color.WHITE, false);
+        result.setPadding(0, dp(12), 0, dp(5));
+        result.setLineSpacing(dp(4), 1f);
+        resultCard.addView(result, lp());
 
         Button overlay = new Button(this);
         overlay.setText("AKTIFKAN FLOATING OVERLAY");
-        root.addView(overlay);
+        overlay.setTextColor(Color.WHITE);
+        overlay.setBackground(bg(Color.rgb(35, 47, 82),
+                Color.rgb(76, 94, 145)));
+        LinearLayout.LayoutParams op = lp();
+        op.topMargin = dp(16);
+        root.addView(overlay, op);
+
+        TextView note = text(
+                "ESTIMASI BERDASARKAN RIWAYAT MANUAL • BUKAN JAMINAN",
+                10, Color.rgb(130, 143, 177), false);
+        note.setGravity(Gravity.CENTER);
+        note.setPadding(0, dp(18), 0, 0);
+        root.addView(note, lp());
 
         predict.setOnClickListener(v -> analyze());
 
@@ -76,48 +161,79 @@ public class MainActivity extends Activity {
             }
         });
 
-        setContentView(root);
+        history.setText(getSharedPreferences("raja", MODE_PRIVATE)
+                .getString("history", ""));
+
+        setContentView(scroll);
     }
 
     void analyze() {
-        String[] names = history.getText().toString().split("[,\\n]");
-        java.util.Map<String, Integer> counts =
-                new java.util.LinkedHashMap<>();
+        String raw = history.getText().toString().trim();
+        String[] names = raw.split("[,\\n;]");
 
-        for (String name : names) {
-            name = name.trim();
+        List<String> ordered = new ArrayList<>();
+        Map<String, Double> scores = new LinkedHashMap<>();
+
+        for (String value : names) {
+            String name = value.trim();
             if (!name.isEmpty()) {
-                counts.put(name, counts.getOrDefault(name, 0) + 1);
+                ordered.add(name);
+                if (!scores.containsKey(name)) scores.put(name, 1.0);
             }
         }
 
-        if (counts.isEmpty()) {
+        if (ordered.isEmpty()) {
             result.setText("Masukkan riwayat lawan terlebih dahulu.");
             return;
         }
 
-        String best = "";
-        int max = 0;
-        for (String name : counts.keySet()) {
-            if (counts.get(name) > max) {
-                best = name;
-                max = counts.get(name);
-            }
+        int total = ordered.size();
+
+        for (int i = 0; i < total; i++) {
+            String name = ordered.get(i);
+            double weight = (i + 1.0) / Math.max(1, total);
+            scores.put(name, scores.get(name) + 1.0 + weight * 0.65);
         }
 
-        int total = 0;
-        for (int count : counts.values()) total += count;
+        String latest = ordered.get(total - 1);
+        scores.put(latest, scores.get(latest) * 0.25);
 
-        int percent = Math.round(max * 100f / total);
-        result.setText("Prediksi dari riwayat manual:\n"
-                + "Lawan paling sering: " + best
-                + "\nFrekuensi: " + percent + "%"
-                + "\nTotal catatan: " + total
-                + "\n\nIni estimasi frekuensi, bukan jaminan lawan berikutnya.");
+        List<Map.Entry<String, Double>> ranked =
+                new ArrayList<>(scores.entrySet());
+
+        ranked.sort((a, b) ->
+                Double.compare(b.getValue(), a.getValue()));
+
+        double sum = 0;
+        for (Map.Entry<String, Double> e : ranked) {
+            sum += e.getValue();
+        }
+
+        StringBuilder out = new StringBuilder();
+        out.append("Prediksi dari pola riwayat:\n\n");
+
+        int limit = Math.min(3, ranked.size());
+
+        for (int i = 0; i < limit; i++) {
+            Map.Entry<String, Double> e = ranked.get(i);
+            int percent = (int)Math.round(e.getValue() * 100 / sum);
+
+            out.append(i + 1).append(". ")
+                    .append(e.getKey())
+                    .append(" — ").append(percent).append("%\n");
+        }
+
+        out.append("\nTotal catatan: ").append(total);
+        out.append("\nLawan terakhir: ").append(latest);
+        out.append("\n\nPersentase adalah skor relatif dari riwayat, bukan peluang resmi atau jaminan.");
+
+        result.setText(out.toString());
 
         getSharedPreferences("raja", MODE_PRIVATE).edit()
-                .putString("prediction", best)
-                .putInt("percent", percent)
+                .putString("history", raw)
+                .putString("prediction", ranked.get(0).getKey())
+                .putInt("percent",
+                        (int)Math.round(ranked.get(0).getValue() * 100 / sum))
                 .apply();
     }
 }
