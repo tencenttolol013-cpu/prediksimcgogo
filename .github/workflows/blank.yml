@@ -1,12 +1,12 @@
-name: Build MCGG Predictor APK
+name: Build Raja Gokgok APK
 
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -19,31 +19,32 @@ jobs:
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
 
-      - name: Setup Gradle
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.10.2'
+          gradle-version: '8.9'
 
-      - name: Unpack Modern App & Build APK
+      - name: Check project files
         run: |
-          echo "=== Menyiapkan Kodingan Proyek Tampilan Modern ==="
-          rm -f *.html *.zip.html project.zip || true
+          test -f settings.gradle
+          test -f build.gradle
+          test -f app/build.gradle
+          test -f app/src/main/AndroidManifest.xml
+          test -f app/src/main/java/com/krizz/mcgg/MainActivity.java
+          test -f app/src/main/java/com/krizz/mcgg/OverlayService.java
 
-          # Ekstrak kodingan Android UI modern (persis seperti preview web & fix tombol klik)
-          echo "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" | base64 -d | tar -xzf -
-
-          echo "=== File Proyek Siap ==="
-          ls -la app/src/main/java/id/krizz/mcggpredictor/
-
-          echo "=== Memulai Kompilasi APK ==="
-          gradle assembleDebug --no-daemon --stacktrace
+      - name: Build Debug APK
+        run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MCGG-Predictor-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: Raja-Gokgok-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
