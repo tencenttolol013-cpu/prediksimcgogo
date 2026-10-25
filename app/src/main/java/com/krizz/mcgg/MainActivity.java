@@ -1,295 +1,270 @@
-
 package com.krizz.mcgg;
 
-import android.app.Service;
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.PixelFormat;
 import android.graphics.drawable.GradientDrawable;
-import android.os.Build;
-import android.os.IBinder;
+import android.net.Uri;
+import android.os.Bundle;
+import android.provider.Settings;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.WindowManager;
-import android.widget.*;
-import java.util.*;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
 
-public class OverlayService extends Service {
-    private WindowManager wm;
-    private WindowManager.LayoutParams params;
-    private View currentView;
-    private EditText historyInput, selfInput;
-    private TextView candidatesView;
-    private boolean minimized = false;
-    private String savedHistory = "", savedSelf = "";
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-    private int dp(float n) {
-        return (int)(n * getResources().getDisplayMetrics().density + 0.5f);
-    }
+public class MainActivity extends Activity {
+    private EditText history;
+    private TextView result;
+    private LinearLayout root;
 
-    private GradientDrawable shape(int color, int stroke, int radius) {
-        GradientDrawable d = new GradientDrawable();
-        d.setColor(color);
-        d.setCornerRadius(dp(radius));
-        d.setStroke(dp(1), stroke);
-        return d;
-    }
-
-    private LinearLayout vertical() {
-        LinearLayout l = new LinearLayout(this);
-        l.setOrientation(LinearLayout.VERTICAL);
-        return l;
-    }
-
-    private LinearLayout horizontal() {
-        LinearLayout l = new LinearLayout(this);
-        l.setOrientation(LinearLayout.HORIZONTAL);
-        l.setGravity(Gravity.CENTER_VERTICAL);
-        return l;
-    }
-
-    private TextView label(String text, int size, int color, boolean bold) {
-        TextView t = new TextView(this);
-        t.setText(text);
-        t.setTextSize(size);
-        t.setTextColor(color);
-        if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        return t;
-    }
-
-    private LinearLayout.LayoutParams lp(int w, int h) {
-        return new LinearLayout.LayoutParams(
-                w < 0 ? w : dp(w), h < 0 ? h : dp(h));
-    }
-
-    private Button button(String text, int color, int textColor) {
-        Button b = new Button(this);
-        b.setText(text);
-        b.setTextSize(12);
-        b.setAllCaps(false);
-        b.setTextColor(textColor);
-        b.setBackground(shape(color, Color.rgb(55, 72, 101), 12));
-        return b;
+    private int dp(float value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
     @Override
-    public void onCreate() {
-        super.onCreate();
-        wm = (WindowManager)getSystemService(WINDOW_SERVICE);
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-        savedHistory = getSharedPreferences("raja", MODE_PRIVATE)
-                .getString("history", "");
-        savedSelf = getSharedPreferences("raja", MODE_PRIVATE)
-                .getString("self", "");
-
-        showPanel();
-    }
-
-    private WindowManager.LayoutParams makeParams(int width, int height) {
-        int type = Build.VERSION.SDK_INT >= 26
-                ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                : WindowManager.LayoutParams.TYPE_PHONE;
-
-        WindowManager.LayoutParams p = new WindowManager.LayoutParams(
-                width, height, type,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                PixelFormat.TRANSLUCENT);
-
-        p.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-        p.y = dp(35);
-        return p;
-    }
-
-    private void attach(View view, int width, int height) {
-        try {
-            if (currentView != null) wm.removeView(currentView);
-        } catch (Exception ignored) {}
-
-        currentView = view;
-        params = makeParams(width, height);
-        wm.addView(view, params);
-    }
-
-    private void showPanel() {
-        minimized = false;
+        getWindow().setStatusBarColor(Color.rgb(10, 14, 30));
+        getWindow().setNavigationBarColor(Color.rgb(10, 14, 30));
 
         ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(false);
-        scroll.setBackground(shape(
-                Color.rgb(12, 22, 43),
-                Color.rgb(64, 79, 111), 24));
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(Color.rgb(10, 14, 30));
 
-        LinearLayout panel = vertical();
-        panel.setPadding(dp(14), dp(12), dp(14), dp(12));
-        scroll.addView(panel);
+        root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(20), dp(24), dp(20), dp(28));
+        scroll.addView(root, new ScrollView.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        LinearLayout header = horizontal();
+        TextView eyebrow = new TextView(this);
+        eyebrow.setText("MCGG  /  SMART PREDICTOR");
+        eyebrow.setTextColor(Color.rgb(139, 164, 255));
+        eyebrow.setTextSize(11);
+        eyebrow.setLetterSpacing(0.13f);
+        eyebrow.setGravity(Gravity.CENTER);
+        root.addView(eyebrow, matchWrap());
 
-        TextView logo = label("♟", 24, Color.WHITE, true);
-        logo.setGravity(Gravity.CENTER);
-        logo.setBackground(shape(
-                Color.rgb(0, 142, 190),
-                Color.rgb(55, 194, 226), 13));
-        header.addView(logo, lp(44, 44));
+        TextView title = new TextView(this);
+        title.setText("RAJA GOKGOK");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(29);
+        title.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        title.setGravity(Gravity.CENTER);
+        title.setPadding(0, dp(7), 0, dp(2));
+        root.addView(title, matchWrap());
 
-        LinearLayout title = vertical();
-        title.setPadding(dp(10), 0, 0, 0);
-        title.addView(label("Raja Gokgok", 17, Color.WHITE, true));
-        title.addView(label("HUD  •  MCGG", 10,
-                Color.rgb(94, 224, 229), true));
+        TextView subtitle = new TextView(this);
+        subtitle.setText("Prediksi lawan berikutnya");
+        subtitle.setTextColor(Color.rgb(176, 187, 219));
+        subtitle.setTextSize(14);
+        subtitle.setGravity(Gravity.CENTER);
+        subtitle.setPadding(0, 0, 0, dp(22));
+        root.addView(subtitle, matchWrap());
 
-        header.addView(title,
-                new LinearLayout.LayoutParams(0, -2, 1));
+        LinearLayout inputCard = card();
+        root.addView(inputCard, matchWrap());
 
-        Button minimize = button("—",
-                Color.rgb(43, 55, 82), Color.WHITE);
-        header.addView(minimize, lp(42, 40));
+        TextView inputTitle = sectionTitle("RIWAYAT PERTANDINGAN");
+        inputCard.addView(inputTitle, matchWrap());
 
-        Button close = button("✕",
-                Color.rgb(43, 55, 82), Color.WHITE);
-        LinearLayout.LayoutParams cp = lp(42, 40);
-        cp.leftMargin = dp(5);
-        header.addView(close, cp);
-        panel.addView(header);
+        TextView helper = new TextView(this);
+        helper.setText("Masukkan nama lawan sesuai urutan pertandingan. Pisahkan dengan koma atau baris baru.");
+        helper.setTextColor(Color.rgb(167, 179, 211));
+        helper.setTextSize(12);
+        helper.setPadding(0, dp(6), 0, dp(12));
+        inputCard.addView(helper, matchWrap());
 
-        LinearLayout tabs = horizontal();
-        for (String name : new String[]{"⚔ Scout", "✎ Edit Nama",
-                "♢ Taktik", "✧ Creator"}) {
-            TextView tab = label(name, 11,
-                    Color.rgb(203, 214, 235), true);
-            tab.setGravity(Gravity.CENTER);
-            tab.setPadding(dp(3), dp(12), dp(3), dp(12));
-            tabs.addView(tab,
-                    new LinearLayout.LayoutParams(0, -2, 1));
-        }
-        panel.addView(tabs);
+        history = new EditText(this);
+        history.setHint("Contoh: Alpha, Beta, Alpha");
+        history.setHintTextColor(Color.rgb(124, 137, 170));
+        history.setTextColor(Color.WHITE);
+        history.setTextSize(14);
+        history.setGravity(Gravity.TOP | Gravity.START);
+        history.setMinLines(4);
+        history.setPadding(dp(14), dp(13), dp(14), dp(13));
+        history.setBackground(roundRect(Color.rgb(20, 28, 54), dp(16),
+                Color.rgb(57, 73, 119), dp(1)));
+        inputCard.addView(history, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(130)));
 
-        addDivider(panel);
+        Button predict = makeButton("ANALISIS RIWAYAT", true);
+        LinearLayout.LayoutParams predictParams = matchWrap();
+        predictParams.topMargin = dp(14);
+        inputCard.addView(predict, predictParams);
 
-        TextView selfLabel = label("NAMA KAMU (OPSIONAL)", 12,
-                Color.rgb(132, 238, 221), true);
-        selfLabel.setPadding(0, dp(12), 0, dp(6));
-        panel.addView(selfLabel);
+        LinearLayout resultCard = card();
+        LinearLayout.LayoutParams resultParams = matchWrap();
+        resultParams.topMargin = dp(16);
+        root.addView(resultCard, resultParams);
 
-        selfInput = new EditText(this);
-        selfInput.setSingleLine(true);
-        selfInput.setTextSize(13);
-        selfInput.setTextColor(Color.WHITE);
-        selfInput.setHintTextColor(Color.GRAY);
-        selfInput.setHint("Nama kamu (agar tidak terhitung)");
-        selfInput.setPadding(dp(12), dp(8), dp(12), dp(8));
-        selfInput.setBackground(shape(
-                Color.rgb(10, 19, 36),
-                Color.rgb(38, 54, 79), 12));
-        selfInput.setText(savedSelf);
-        panel.addView(selfInput, lp(-1, 46));
+        TextView resultLabel = sectionTitle("HASIL PREDIKSI");
+        resultCard.addView(resultLabel, matchWrap());
 
-        TextView historyLabel = label("RIWAYAT LAWAN", 12,
-                Color.rgb(132, 238, 221), true);
-        historyLabel.setPadding(0, dp(12), 0, dp(6));
-        panel.addView(historyLabel);
+        result = new TextView(this);
+        result.setText("Prediksi akan muncul di sini setelah riwayat dianalisis.");
+        result.setTextColor(Color.rgb(220, 227, 249));
+        result.setTextSize(14);
+        result.setLineSpacing(dp(4), 1.0f);
+        result.setPadding(0, dp(12), 0, dp(4));
+        resultCard.addView(result, matchWrap());
 
-        historyInput = new EditText(this);
-        historyInput.setGravity(Gravity.TOP | Gravity.START);
-        historyInput.setTextSize(13);
-        historyInput.setTextColor(Color.WHITE);
-        historyInput.setHintTextColor(Color.GRAY);
-        historyInput.setHint("Player1, Player3, Player4...");
-        historyInput.setMinLines(3);
-        historyInput.setPadding(dp(12), dp(10), dp(12), dp(10));
-        historyInput.setBackground(shape(
-                Color.rgb(9, 18, 34),
-                Color.rgb(38, 54, 79), 12));
-        historyInput.setText(savedHistory);
-        panel.addView(historyInput, lp(-1, 100));
+        Button overlay = makeButton("AKTIFKAN FLOATING OVERLAY", false);
+        LinearLayout.LayoutParams overlayParams = matchWrap();
+        overlayParams.topMargin = dp(16);
+        root.addView(overlay, overlayParams);
 
-        LinearLayout actions = horizontal();
+        TextView note = new TextView(this);
+        note.setText("PREDIKSI BERDASARKAN RIWAYAT MANUAL • BUKAN JAMINAN");
+        note.setTextColor(Color.rgb(118, 132, 170));
+        note.setTextSize(10);
+        note.setGravity(Gravity.CENTER);
+        note.setPadding(dp(8), dp(18), dp(8), 0);
+        root.addView(note, matchWrap());
 
-        Button save = button("Simpan data",
-                Color.rgb(31, 45, 69), Color.WHITE);
-        Button predict = button("✧ Prediksi",
-                Color.rgb(0, 194, 155), Color.rgb(4, 24, 35));
+        predict.setOnClickListener(v -> analyze());
 
-        actions.addView(save,
-                new LinearLayout.LayoutParams(0, dp(46), 1));
-
-        LinearLayout.LayoutParams pp =
-                new LinearLayout.LayoutParams(0, dp(46), 1);
-        pp.leftMargin = dp(8);
-        actions.addView(predict, pp);
-
-        LinearLayout.LayoutParams ap = lp(-1, -2);
-        ap.topMargin = dp(12);
-        panel.addView(actions, ap);
-
-        LinearLayout resultCard = vertical();
-        resultCard.setPadding(dp(12), dp(12), dp(12), dp(12));
-        resultCard.setBackground(shape(
-                Color.rgb(9, 18, 34),
-                Color.rgb(35, 52, 77), 15));
-
-        LinearLayout.LayoutParams rcp = lp(-1, -2);
-        rcp.topMargin = dp(12);
-        panel.addView(resultCard, rcp);
-
-        resultCard.addView(label("KANDIDAT LAWAN", 12,
-                Color.rgb(111, 230, 205), true));
-
-        candidatesView = label(
-                "Masukkan riwayat lalu tekan Prediksi.",
-                13, Color.rgb(225, 233, 247), false);
-        candidatesView.setPadding(0, dp(10), 0, dp(3));
-        candidatesView.setLineSpacing(dp(4), 1f);
-        resultCard.addView(candidatesView);
-
-        TextView footer = label(
-                "⠿  Geser panel untuk memindahkan",
-                10, Color.rgb(111, 220, 229), false);
-        footer.setGravity(Gravity.CENTER);
-        footer.setPadding(0, dp(12), 0, 0);
-        panel.addView(footer);
-
-        minimize.setOnClickListener(v -> showBubble());
-        close.setOnClickListener(v -> stopSelf());
-        save.setOnClickListener(v -> saveData());
-        predict.setOnClickListener(v -> {
-            saveData();
-            runPrediction();
+        overlay.setOnClickListener(v -> {
+            if (!Settings.canDrawOverlays(this)) {
+                Intent intent = new Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            } else {
+                startService(new Intent(this, OverlayService.class));
+                Toast.makeText(this, "Overlay dijalankan", Toast.LENGTH_SHORT).show();
+            }
         });
 
-        makeDraggable(header);
-        attach(scroll, dp(350), dp(590));
+        String saved = getSharedPreferences("raja", MODE_PRIVATE)
+                .getString("history", "");
+        history.setText(saved);
+
+        setContentView(scroll);
     }
 
-    private void addDivider(LinearLayout parent) {
-        View line = new View(this);
-        line.setBackgroundColor(Color.rgb(44, 59, 83));
-        parent.addView(line, lp(-1, 1));
+    private LinearLayout.LayoutParams matchWrap() {
+        return new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
     }
 
-    private void saveData() {
-        savedHistory = historyInput.getText().toString();
-        savedSelf = selfInput.getText().toString().trim();
-
-        getSharedPreferences("raja", MODE_PRIVATE).edit()
-                .putString("history", savedHistory)
-                .putString("self", savedSelf)
-                .apply();
-
-        Toast.makeText(this, "Data disimpan",
-                Toast.LENGTH_SHORT).show();
+    private LinearLayout card() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(17), dp(17), dp(17), dp(17));
+        box.setBackground(roundRect(Color.rgb(22, 30, 57), dp(22),
+                Color.rgb(63, 79, 129), dp(1)));
+        return box;
     }
 
-    private void runPrediction() {
-        String[] parts = savedHistory.split("[,;\\n]");
+    private TextView sectionTitle(String text) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextColor(Color.rgb(153, 174, 255));
+        view.setTextSize(11);
+        view.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        view.setLetterSpacing(0.09f);
+        return view;
+    }
+
+    private Button makeButton(String text, boolean primary) {
+        Button button = new Button(this);
+        button.setText(text);
+        button.setTextSize(12);
+        button.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
+        button.setAllCaps(false);
+        button.setTextColor(Color.WHITE);
+        button.setPadding(dp(12), dp(8), dp(12), dp(8));
+        button.setBackground(roundRect(
+                primary ? Color.rgb(83, 105, 235) : Color.rgb(35, 47, 82),
+                dp(16),
+                primary ? Color.rgb(117, 139, 255) : Color.rgb(76, 94, 145),
+                dp(1)));
+        return button;
+    }
+
+    private GradientDrawable roundRect(int color, int radius, int strokeColor, int strokeWidth) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(color);
+        drawable.setCornerRadius(radius);
+        drawable.setStroke(strokeWidth, strokeColor);
+        return drawable;
+    }
+
+    private void analyze() {
+        String raw = history.getText().toString().trim();
+        String[] names = raw.split("[,\\n;]");
         List<String> ordered = new ArrayList<>();
         Map<String, Double> scores = new LinkedHashMap<>();
-        Map<String, Integer> counts = new LinkedHashMap<>();
 
-        for (String part : parts) {
+        for (String value : names) {
+            String name = value.trim();
+            if (!name.isEmpty()) {
+                ordered.add(name);
+                scores.putIfAbsent(name, 1.0);
+            }
+        }
+
+        if (ordered.isEmpty()) {
+            result.setText("Masukkan riwayat lawan terlebih dahulu.");
+            return;
+        }
+
+        int total = ordered.size();
+        for (int i = 0; i < total; i++) {
+            String name = ordered.get(i);
+            double recencyWeight = (i + 1.0) / Math.max(1, total);
+            scores.put(name, scores.get(name) + 1.0 + (recencyWeight * 0.65));
+        }
+
+        String latest = ordered.get(total - 1);
+        scores.put(latest, scores.get(latest) * 0.25);
+
+        List<Map.Entry<String, Double>> ranked = new ArrayList<>(scores.entrySet());
+        ranked.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
+
+        double sum = 0.0;
+        for (Map.Entry<String, Double> entry : ranked) sum += entry.getValue();
+
+        StringBuilder output = new StringBuilder();
+        output.append("Prediksi dari pola riwayat:\n\n");
+        int limit = Math.min(3, ranked.size());
+        for (int i = 0; i < limit; i++) {
+            Map.Entry<String, Double> entry = ranked.get(i);
+            int percent = (int) Math.round(entry.getValue() * 100.0 / sum);
+            output.append(i + 1).append(". ")
+                    .append(entry.getKey())
+                    .append(" — ").append(percent).append("%\n");
+        }
+
+        output.append("\nTotal catatan: ").append(total);
+        output.append("\nLawan terakhir: ").append(latest);
+        output.append("\n\nPersentase adalah skor relatif dari riwayat yang dimasukkan, bukan peluang resmi atau jaminan lawan berikutnya.");
+
+        result.setText(output.toString());
+
+        getSharedPreferences("raja", MODE_PRIVATE).edit()
+                .putString("history", raw)
+                .putString("prediction", ranked.get(0).getKey())
+                .putInt("percent", (int) Math.round(ranked.get(0).getValue() * 100.0 / sum))
+                .apply();
+    }
+}
+ring part : parts) {
             String name = part.trim();
 
             if (!name.isEmpty()
