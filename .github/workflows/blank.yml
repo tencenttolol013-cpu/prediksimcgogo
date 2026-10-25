@@ -4,9 +4,11 @@ name: Build MCGG APK
 on:
   workflow_dispatch:
   push:
-    paths:
-      - 'MCGG_Predictor_Android_Source.zip'
-      - '.github/workflows/blank.yml'
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -15,9 +17,50 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Find Android source ZIP
+        id: source
+        shell: bash
+        run: |
+          ZIP_FILE=$(find . -maxdepth 3 -type f -iname '*MCGG*Android*Source*.zip' | head -n 1)
+
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ZIP project Android tidak ditemukan."
+            echo "Daftar file repository:"
+            find . -maxdepth 4 -type f
+            exit 1
+          fi
+
+          echo "ZIP ditemukan: $ZIP_FILE"
+          echo "zip_file=$ZIP_FILE" >> "$GITHUB_OUTPUT"
+
       - name: Extract Android project
         run: |
-          unzip -o MCGG_Predictor_Android_Source.zip -d android-project
+          mkdir -p android-project
+          unzip -o "${{ steps.source.outputs.zip_file }}" -d android-project
+          echo "Daftar file project:"
+          find android-project -maxdepth 4 -type f | head -200
+
+      - name: Locate Gradle project
+        id: project
+        shell: bash
+        run: |
+          ROOT="android-project"
+
+          while [ ! -f "$ROOT/gradlew" ] && [ ! -f "$ROOT/build.gradle" ] && [ ! -f "$ROOT/build.gradle.kts" ]; do
+            NEXT=$(find "$ROOT" -mindepth 2 -maxdepth 4 -type f \( -name gradlew -o -name build.gradle -o -name build.gradle.kts \) | head -n 1)
+
+            if [ -z "$NEXT" ]; then
+              echo "File build.gradle, build.gradle.kts, atau gradlew tidak ditemukan."
+              echo "ZIP mungkin bukan project Android lengkap."
+              exit 1
+            fi
+
+            ROOT=$(dirname "$NEXT")
+            break
+          done
+
+          echo "Project directory: $ROOT"
+          echo "dir=$ROOT" >> "$GITHUB_OUTPUT"
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -33,12 +76,23 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build APK
-        working-directory: android-project
-        run: gradle assembleDebug
+      - name: Build Debug APK
+        working-directory: ${{ steps.project.outputs.dir }}
+        shell: bash
+        run: |
+          if [ -f gradlew ]; then
+            chmod +x gradlew
+            ./gradlew assembleDebug --stacktrace
+          else
+            gradle assembleDebug --stacktrace
+          fi
 
       - name: Upload APK
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: MCGG-Predictor-APK
-          path: android-project/app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            android-project/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
